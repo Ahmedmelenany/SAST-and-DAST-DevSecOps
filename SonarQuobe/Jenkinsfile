@@ -1,0 +1,29 @@
+pipeline {
+  agent any
+
+  stages {
+
+    // stage('SonarQube - SAST') {
+    //   steps {
+    //     sh "mvn sonar:sonar -Dsonar.projectKey=devsecops-numeric-application -Dsonar.host.url=http://controlplane:30012 -Dsonar.login=<use-your-token-here>"
+    //   }
+    // }  
+
+
+    stage('SonarQube - SAST') {
+      steps {
+        withSonarQubeEnv('sonarqube') {
+          sh "mvn sonar:sonar \
+              -Dsonar.projectKey=devsecops-numeric-application \
+              -Dsonar.host.url=<sonarqube-server-url>"
+      }
+        timeout(time: 2, unit: 'MINUTES') {
+          script {
+            waitForQualityGate abortPipeline: true
+          }
+        }
+      }
+    }
+  
+  }
+}
