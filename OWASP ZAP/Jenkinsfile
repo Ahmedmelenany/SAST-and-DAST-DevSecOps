@@ -1,0 +1,43 @@
+pipeline {
+  agent any
+
+  environment {
+    deploymentName = "devsecops"
+    containerName = "devsecops-container"
+    serviceName = "devsecops-svc"
+    imageName = "docker-registry:5000/java-app:latest"
+    applicationURL = "http://controlplane:30010"
+    applicationURI = "/increment/99"
+  }
+
+  stages {
+
+        stage('K8S Deployment - DEV') {
+        steps {
+          parallel(
+          "Deployment": {
+              sh "bash k8s-deployment.sh"
+          },
+          "Rollout Status": {
+              sh "bash k8s-deployment-rollout-status.sh"
+          }
+        )
+      }
+    }
+
+      stage('Integration Tests - DEV') {
+        steps {
+          script {
+            try {
+            sh "bash integration-test.sh"
+            }
+            catch (e) {
+            sh "kubectl -n default rollout undo deploy ${deploymentName}"
+            throw e
+          }
+        }
+      }
+    }
+
+  }
+}
